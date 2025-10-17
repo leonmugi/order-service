@@ -271,7 +271,7 @@ The API dynamically calculated the total amount (449.48) based on the
 item quantities and unit prices.
 
 ### 7️⃣ GET -- List Orders (Pagination)
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/ff1315a7-9d2b-42f9-951b-5d4c0161d1d9" />
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/0bdaab61-9dc6-4751-9e89-f75bd0d0dbb7" />
 **Description:**\
 The pagination endpoint `/api/orders?page=0&size=10` returned all saved
 orders in JSON format, confirming data persistence and DTO mapping
