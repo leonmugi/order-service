@@ -433,14 +433,14 @@ management:
 
 ---
 
-## 💰 Estimated Budget and Resources (to date)
+## 💰 Estimated Budget and Resources (SPRINT 2)
 
-| Category | Resource | Cost (MXN) |
+| Category | Resource | Cost (USD) |
 |-----------|-----------|------------|
 | Development tools | IntelliJ IDEA, Postman, H2, Maven | $0 (community/free versions) |
 | Database | PostgreSQL (local installation) | $0 |
-| Hardware & Power | Developer machine, internet, electricity | $350 MXN approx. |
-| **Total estimated to date** |  | **≈ $350 MXN** |
+| Hardware & Power | Developer machine, internet, electricity | $500 USD approx. |
+| **Total estimated to date** |  | **≈ $500 USD** |
 
 ---
 
