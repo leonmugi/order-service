@@ -286,3 +286,266 @@ successfully through Swagger and the embedded H2 database.\
 The API demonstrated stability, data persistence, and automatic
 documentation, proving the system is ready for production deployment
 once switched to PostgreSQL.
+
+
+# 🧾 Order Service API — Version 2.0.0 (Sprint 2)
+
+This project is part of **Challenge 5** from the **Technoready Backend Bootcamp** and corresponds to **Sprint 2: Environment Profiles and System Variables**.  
+Its goal is to implement multiple environment profiles (`dev`, `test`, `prod`) in a **Spring Boot 3** application, each using different configurations and databases.
+
+---
+
+## 🚀 Sprint Objective
+
+The main goal of Sprint 2 was to configure the project to work under different execution environments, separating logic and variables for each one:
+
+- **Development (dev)** → Local environment using an H2 in-memory database.  
+- **Testing (test)** → Isolated environment for running automated integration tests.  
+- **Production (prod)** → Real environment using PostgreSQL database and persistent configuration.
+
+Each environment uses its own configuration file (`application-*.yml`) and environment variables to keep credentials secure and ensure flexibility.
+
+---
+
+## 🏗️ Project Structure
+
+```
+src/
+ └── main/
+     ├── java/com/leon/challenge5/
+     │   ├── controller/
+     │   ├── dto/
+     │   ├── model/
+     │   ├── repository/
+     │   ├── service/
+     │   └── OrderServiceApplication.java
+     └── resources/
+         ├── application.yml
+         ├── application-dev.yml
+         ├── application-test.yml
+         ├── application-prod.yml
+         └── .env.example
+```
+
+---
+
+## ⚙️ Environment Profiles Configuration
+
+### 1️⃣ application.yml
+
+**Base configuration delegating to the active profile:**
+
+```yaml
+spring:
+  profiles:
+    active: @activatedProperties@
+```
+
+---
+
+### 2️⃣ Development Profile — application-dev.yml
+
+**Uses H2 database for rapid local testing.**
+- Includes the `/h2-console` for data inspection.
+- Loads lightweight configuration for faster builds.
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:orders_dev
+    driver-class-name: org.h2.Driver
+    username: sa
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+```
+
+✅ **Expected result:**  
+`http://localhost:8080/actuator/health` returns `{ "status": "UP" }`
+
+---
+
+### 3️⃣ Test Profile — application-test.yml
+
+**Used during unit and integration testing via Maven.**
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:orders_test
+    driver-class-name: org.h2.Driver
+    username: sa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+server:
+  port: 0
+```
+
+✅ **Expected result:**  
+`BUILD SUCCESS` on Maven test output.
+
+---
+
+### 4️⃣ Production Profile — application-prod.yml
+
+**Connects to a PostgreSQL database and uses .env variables for credentials.**
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orders
+    username: orders_user
+    password: change_me
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+```
+
+✅ **Expected result:**
+
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": { "status": "UP", "details": { "database": "PostgreSQL" } },
+    "diskSpace": { "status": "UP" },
+    "ping": { "status": "UP" }
+  }
+}
+```
+
+---
+
+## 💰 Estimated Budget and Resources (to date)
+
+| Category | Resource | Cost (MXN) |
+|-----------|-----------|------------|
+| Development tools | IntelliJ IDEA, Postman, H2, Maven | $0 (community/free versions) |
+| Database | PostgreSQL (local installation) | $0 |
+| Hardware & Power | Developer machine, internet, electricity | $350 MXN approx. |
+| **Total estimated to date** |  | **≈ $350 MXN** |
+
+---
+
+## 📈 Scalability & Sustainability
+
+### Scalability
+- The app follows a modular, profile-based design allowing deployment to multiple environments.  
+- PostgreSQL supports vertical and horizontal scaling, and the project can integrate Docker or Kubernetes for orchestration.  
+- This makes the system ready for CI/CD pipelines and distributed microservices in future sprints.
+
+### Sustainability
+- Built entirely on open-source technologies (Spring Boot, PostgreSQL, H2).  
+- Externalized configuration ensures reusable code across environments.  
+- Lightweight components reduce memory and CPU use — aligning with green software principles.
+
+---
+
+## 🧱 Technical Stack
+
+| Component | Technology |
+|------------|-------------|
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.6 |
+| ORM | Hibernate / JPA |
+| Databases | H2, PostgreSQL |
+| Build Tool | Maven |
+| Documentation | Springdoc OpenAPI (Swagger UI) |
+| IDE | IntelliJ IDEA |
+| Version Control | Git & GitHub |
+
+---
+
+## 🧩 How to Run
+
+Clone the repository:
+```bash
+git clone https://github.com/leonmugi/order-service.git
+cd order-service
+```
+
+Set environment variables in `.env` or your system.
+
+Run with desired profile:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+or
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+Test endpoints:
+
+- **Health check** → [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)  
+- **Swagger UI** → [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)  
+- **H2 Console (dev only)** → [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
+
+---
+
+## 📘 Learnings & Takeaways
+
+- Practical understanding of Spring Boot environment profiles.  
+- Secure management of environment variables.  
+- Use of H2 in-memory DB for testing.  
+- Full integration of PostgreSQL for production use.  
+- Validation via Spring Actuator endpoints.  
+- Project ready for scalability and continuous delivery.
+
+---
+The screenshot shows the user setting environment variables in Windows PowerShell for the Spring Boot production profile.
+Commands like setx SERVER_PORT, setx DB_URL, setx DB_USERNAME, and setx DB_PASSWORD are used to securely store database connection details for PostgreSQL. Each variable is confirmed as “saved successfully.”
+
+<img width="996" height="996" alt="Image" src="https://github.com/user-attachments/assets/134cc317-87f3-4eec-9b28-947485c53948" />
+
+This image displays the Spring Boot test run in the terminal (Git Bash).
+The active profile is “test”, using the in-memory H2 database.
+Hibernate initializes successfully, and the test results show:
+✅ Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+💬 The final message is “BUILD SUCCESS”, confirming that all integration tests passed correctly.
+
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/ba1aace7-6828-42d7-b1be-dcd049eb1392" />
+
+The screenshot shows the H2 web console running at localhost:8080/h2-console.
+It displays database tables such as ORDERS and ORDER_ITEMS, showing that the schema and in-memory database were correctly initialized during the development profile execution.
+
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/204caad5-accb-464f-a182-4a8a96ba31bf" />
+
+This image captures the Spring Boot Actuator health check at http://localhost:52572/actuator/health.
+The JSON response confirms that all components are active:
+
+"status": "UP"
+
+"database": "H2"
+
+"ping": "UP"
+
+"diskSpace": "UP"
+indicating the application is fully operational and connected to the expected H2 database instance.
+
+<img width="1920" height="1030" alt="Image" src="https://github.com/user-attachments/assets/99286bc3-be5d-431b-b54c-914043536b78" />
+
+📦 **Version: 2.0.0 — Sprint 2**  
+**Challenge 5 — Technoready Backend Bootcamp**
+
+
+
+
