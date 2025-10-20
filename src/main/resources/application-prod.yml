@@ -1,21 +1,15 @@
 spring:
   datasource:
-    url: ${DB_URL}            # ej: jdbc:postgresql://host:5432/orders
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driverClassName: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate.jdbc.lob.non_contextual_creation: true
+      ddl-auto: update   # TIP: para la demo inicial; luego vuelve a 'validate'
 
 server:
   port: ${SERVER_PORT:8080}
-
-logging:
-  level:
-    root: INFO
 
 management:
   endpoints:

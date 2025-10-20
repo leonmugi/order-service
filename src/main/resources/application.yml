@@ -2,8 +2,7 @@ spring:
   application:
     name: order-service
   profiles:
-    # Se reemplaza en build con el perfil que ejecutes
-    active: @activatedProperties@
+    active: dev   # default local; se puede sobreescribir por parámetro
 
 server:
   port: ${SERVER_PORT:8080}
