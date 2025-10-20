@@ -1,5 +1,13 @@
 spring:
   application:
     name: order-service
+  profiles:
+    # Se reemplaza en build con el perfil que ejecutes
+    active: @activatedProperties@
+
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: INFO
