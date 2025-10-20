@@ -1,5 +1,12 @@
 spring:
   application:
     name: order-service
+  profiles:
+    active: dev   # default local; se puede sobreescribir por parámetro
+
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: INFO

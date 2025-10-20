@@ -11,7 +11,7 @@ public class HealthController {
     @ApiResponse(description = "HI")
     @GetMapping("/")
     public String welcomeServer() {
-        return "el leon se la come";
+        return "el leon";
     }
 
     @ApiResponse(description = "HI2")
