@@ -547,5 +547,439 @@ indicating the application is fully operational and connected to the expected H2
 **Challenge 5 — Technoready Backend Bootcamp**
 
 
+# Order Service API — Version 3.0.0 (Sprint 3)
+
+**Technoready Backend Bootcamp — Challenge 5**  
+Stage: **Sprint 3 — OpenAPI (Swagger) Documentation, Unit and Integration Testing, and Quality Assurance**
+
+---
+
+## Objective of Sprint 3
+
+The main goal of this sprint is to ensure that the Order Service API is fully documented, validated, and tested according to production-grade quality standards.  
+This includes implementing **OpenAPI/Swagger documentation**, creating **unit and integration test suites** with **code coverage analysis**, and ensuring repository readiness for CI/CD integration.
+
+**Expected outcomes:**
+1. Fully functional and documented OpenAPI (Swagger) interface.
+2. Comprehensive unit and integration test coverage.
+3. Automated quality reports (JaCoCo).
+4. Source code structured and documented.
+5. Execution and usage instructions clearly stated in the repository.
+
+---
+
+## Architecture and Technology Stack
+
+- **Java 17**
+- **Spring Boot 3.x**
+- **Build System:** Maven
+- **Persistence:** H2 (dev/test) and PostgreSQL (prod)
+- **API Documentation:** Springdoc OpenAPI (Swagger UI)
+- **Testing:** JUnit 5, Mockito, Spring Test (MockMvc / WebTestClient)
+- **Coverage:** JaCoCo
+- **Optional Integration:** Testcontainers (PostgreSQL)
+
+### Project Structure
+```
+src/
+ ├── main/java/com/leon/challenge5/order/
+ │   ├── controller/       # REST endpoints
+ │   ├── service/          # Business logic
+ │   ├── repository/       # JPA repositories
+ │   ├── model/            # Entities / DTOs
+ │   └── config/           # Swagger, CORS, etc.
+ └── test/java/com/leon/challenge5/order/
+     ├── unit/             # Unit tests
+     └── integration/      # Integration tests
+```
+
+---
+
+## Domain Overview
+
+This service manages **Orders** with CRUD operations and related **OrderItems**.  
+Each order contains a set of items, total price calculation, and status management.
+
+**Example JSON:**
+```json
+{
+  "id": 1,
+  "customerId": "CUST-001",
+  "status": "CREATED",
+  "items": [
+    {"sku": "SKU-123", "name": "Widget", "quantity": 2, "unitPrice": 99.5}
+  ],
+  "total": 199.0,
+  "createdAt": "2025-10-01T10:00:00Z"
+}
+```
+
+---
+
+## API Documentation (OpenAPI / Swagger)
+
+### Maven Dependency
+```xml
+<dependency>
+  <groupId>org.springdoc</groupId>
+  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+  <version>2.6.0</version>
+</dependency>
+```
+
+### Access URLs
+- Swagger UI → `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON → `http://localhost:8080/v3/api-docs`
+
+### Custom Configuration
+```java
+@OpenAPIDefinition(
+  info = @Info(
+    title = "Order Service API",
+    version = "3.0.0",
+    description = "CRUD operations, order status transitions, and validation"
+  ),
+  servers = {@Server(url = "/", description = "Local")}
+)
+@Configuration
+public class SwaggerConfig {}
+```
+
+### Documentation Best Practices
+- Annotate endpoints with `@Operation`, `@ApiResponses`, and DTOs with `@Schema`.
+- Document all status codes (200, 201, 204, 400, 404, 409, 422, 500).
+- Include validation rules using `jakarta.validation` annotations.
+- Provide request/response examples for each major endpoint.
+
+---
+
+## Environment Configuration (Profiles)
+
+Inherited from Sprint 2:
+- `application-dev.yml` → H2 database, `spring.jpa.hibernate.ddl-auto=update`.
+- `application-test.yml` → H2 or PostgreSQL via Testcontainers.
+- `application-prod.yml` → PostgreSQL with environment variable credentials.
+
+**Run with a profile:**
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+## Testing
+
+### Scope and Criteria
+- **Unit tests:** Validate isolated business logic using Mockito.
+- **Integration tests:** Validate endpoint flows using MockMvc or WebTestClient.
+- Cover success, edge, and failure cases.
+- Minimum coverage thresholds:
+  - 80% line coverage
+  - 70% branch coverage
+
+### Example Unit Test
+```java
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+
+  @Mock private OrderRepository repo;
+  @InjectMocks private OrderService service;
+
+  @Test
+  void create_shouldCalculateTotalAndPersist() {
+    Order o = new Order();
+    when(repo.save(any())).thenAnswer(inv -> {
+      Order saved = inv.getArgument(0);
+      saved.setId(1L);
+      return saved;
+    });
+
+    Order result = service.create(o);
+
+    assertNotNull(result.getId());
+    assertTrue(result.getTotal().doubleValue() > 0);
+    verify(repo).save(any(Order.class));
+  }
+}
+```
+
+### Example Integration Test
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+class OrderControllerIT {
+
+  @Autowired private MockMvc mockMvc;
+
+  @Test
+  void createOrder_shouldReturn201AndLocation() throws Exception {
+    String body = "{\"customerId\":\"CUST-1\",\"items\":[{\"sku\":\"SKU-1\",\"name\":\"X\",\"quantity\":1,\"unitPrice\":10.0}]}";
+
+    mockMvc.perform(post("/api/v1/orders")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(body))
+      .andExpect(status().isCreated())
+      .andExpect(header().exists("Location"));
+  }
+}
+```
+
+### Run Tests and Generate Coverage
+```bash
+mvn clean verify
+```
+Coverage report → `target/site/jacoco/index.html`
+
+---
+
+## Test Scenarios
+
+1. Create order (201) and verify total calculation.
+2. Create with empty items (400).
+3. Create with invalid quantity or price (422).
+4. Retrieve existing order (200) and non-existing (404).
+5. Update status (CREATED → PAID → SHIPPED → CANCELLED) with proper rules.
+6. Delete order (204) and confirm not found afterwards (404).
+7. Validation and error response formats.
+8. Concurrency cases (optional optimistic locking).
+
+---
+
+## Local Execution
+
+### Requirements
+- JDK 17+
+- Maven 3.9+
+- Docker (optional for PostgreSQL or Testcontainers)
+
+### Commands
+```bash
+# Run in dev profile
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Execute tests
+mvn clean verify
+
+# Build JAR for production
+mvn -DskipTests package
+java -jar target/order-service-*.jar --spring.profiles.active=prod
+```
+
+### Useful URLs
+- Swagger UI → `http://localhost:8080/swagger-ui/index.html`
+- H2 Console → `http://localhost:8080/h2-console`
+
+---
+
+## Continuous Integration 
+
+Example GitHub Actions workflow:
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Build and Test
+        run: mvn -B clean verify
+```
+
+---
+
+## Design Rationale
+
+- **Springdoc OpenAPI** provides automatic API documentation for the project.
+- **JUnit 5 + Mockito** ensures test isolation and flexibility.
+- **Spring Test (MockMvc)** validates full HTTP-layer integration.
+- **H2 Database** offers lightweight in-memory persistence for quick local testing.
+- **JaCoCo** provides code coverage enforcement to ensure continuous quality.
+- **Profiles (dev/test/prod)** separate configurations for maintainability.
+- **REST conventions** are strictly followed (proper status codes and messages).
+
+# Project Context and Objective
+
+The Order Service API was developed as part of the Technoready Backend Bootcamp, Challenge 5.  
+The objective was to design, document, and test a scalable microservice using **Spring Boot 3** that could efficiently handle order management operations while adhering to professional software engineering standards.
+
+The project simulates a real-world scenario similar to an e-commerce order management system, where accuracy, reliability, and scalability are essential.  
+It responds to a common industry challenge: maintaining synchronized order data across multiple environments while ensuring robust API documentation and automated validation through testing.
+
+---
+
+## Sprint Focus Areas
+
+The sprint specifically focuses on three pillars:
+
+1. **Comprehensive API Documentation** using **OpenAPI / Swagger**.  
+2. **Unit and Integration Testing** with **JUnit 5**, **Mockito**, and **Spring Test**.  
+3. **Code Quality and Sustainability**, including **JaCoCo** coverage analysis and environment profiles for development, testing, and production.
+
+---
+
+## Technical Overview
+
+The project is built using **Java 17** and **Spring Boot 3**, following a modular architecture divided into layers:  
+**Controller**, **Service**, **Repository**, and **Model**.
+
+The persistence layer supports multiple profiles:
+
+- **Development and Testing:** In-memory **H2** database for fast iteration.  
+- **Production:** **PostgreSQL** database connected through environment variables.
+
+**Swagger (springdoc-openapi)** automatically documents all endpoints, displaying their request/response structures and validation rules.  
+This allows the API to serve as a self-descriptive contract that developers and clients can easily test via the Swagger UI interface at runtime.
+
+### Key Features
+
+- CRUD operations for **Orders** and related **OrderItems**.  
+- Automatic **total calculation** based on quantity and unit price.  
+- Validation rules enforced through **jakarta.validation** annotations (`@NotNull`, `@Positive`, `@NotBlank`).  
+- Proper **HTTP status codes** and **error handling** using `ProblemDetail` for standardized responses.  
+- Environment isolation through **Spring Profiles** (`dev`, `test`, `prod`), allowing smooth transitions between local testing and deployment.
+
+---
+
+## Testing and Quality Assurance
+
+The service integrates **JUnit 5**, **Mockito**, and **Spring Boot Test** to ensure functionality across all layers.  
+Two test categories are implemented:
+
+- **Unit Tests:** Validate business logic, calculations, and repository calls independently.  
+- **Integration Tests:** Validate the full flow through REST endpoints using **MockMvc** and embedded databases.
+
+Code coverage is analyzed with **JaCoCo**, guaranteeing that at least **80% of lines** and **70% of branches** are verified.  
+This level of automation provides long-term maintainability and confidence in each build.
+
+---
+
+## Functional Description
+
+The **Order Service API** acts as a core microservice in a potential distributed system that handles customer orders.  
+It exposes REST endpoints for:
+
+- **Creating new orders:** Validates input, calculates totals, and stores results in the database.  
+- **Reading orders:** Returns all orders or specific ones by ID.  
+- **Updating orders:** Modifies order data or transitions their status (e.g., from `CREATED` to `PAID` or `SHIPPED`).  
+- **Deleting orders:** Removes outdated or invalid entries safely.
+
+Each operation is documented within Swagger, allowing users to test live interactions directly from the browser.  
+Responses include structured JSON with timestamps, status codes, and detailed error messages when applicable.
+
+### Example Response
+
+```json
+{
+  "id": 1,
+  "customerId": "CUST-001",
+  "status": "PAID",
+  "items": [
+    {"sku": "SKU-123", "name": "Widget", "quantity": 2, "unitPrice": 99.5}
+  ],
+  "total": 199.0,
+  "createdAt": "2025-10-01T10:00:00Z"
+}
+```
+
+This approach demonstrates the fundamental capabilities of modern **service-oriented architecture**:  
+**clear contracts**, **predictable outputs**, and **consistent validation**.
+
+
+## Budget
+
+# Technical Budget Report – Order Service API Development
+
+**Eng. Leonel Campos Valdés**  
+*Biomedical Engineer & Backend Developer Apprentice*  
+*Technoready Backend Bootcamp*  
+
+---
+
+## 1. Project Overview
+
+The *Order Service API*   
+Its objective was to design, document, and test a scalable microservice using **Spring Boot 3** that efficiently manages order processing operations.  
+The service simulates an **e-commerce order management environment** requiring accuracy, reliability, and scalability.  
+It includes API documentation with **OpenAPI/Swagger**, automated testing (**JUnit 5, Mockito**), and quality validation (**JaCoCo coverage reports**).
+
+---
+
+## 2. Professional Profile
+
+This project was executed by **Eng. Leonel Campos Valdés**, a Biomedical Engineer specialized in healthcare simulation technology and currently training as a Backend Developer.  
+The approach integrates biomedical engineering methodology with modern software development standards, focusing on modular architecture, documentation, and system sustainability.
+
+---
+
+## 3. Methodology and Work Phases
+
+The project was structured into **five main phases** that reflect a complete software engineering cycle.  
+Each phase was executed using agile principles with measurable deliverables, continuous testing, and version control through GitHub.
+
+| Phase | Description | Estimated Hours | Rate (MXN/h) | Subtotal (MXN) |
+|:------|:-------------|:----------------|:--------------|:----------------|
+| **1. Analysis & Planning** | Requirements gathering, data modeling, system scope definition | 10 | $320 | $3,200 |
+| **2. Architecture & Design** | System architecture, entity modeling, OpenAPI setup | 12 | $320 | $3,840 |
+| **3. Implementation** | Backend coding (Spring Boot, Controllers, Services, Repositories) | 20 | $320 | $6,400 |
+| **4. Testing & QA** | JUnit, Mockito, Integration Tests, JaCoCo configuration | 10 | $320 | $3,200 |
+| **5. Documentation & Deployment** | Technical README, Swagger documentation, setup validation | 6 | $320 | $1,920 |
+
+---
+
+## 4. Financial Summary
+
+The financial estimation considers a **blended hourly rate** derived from biomedical and software engineering tabulators.  
+A **15% profit margin** and **16% VAT (IVA)** are applied to the subtotal to calculate the final cost.
+
+| Concept | Amount (MXN) |
+|:---------|--------------:|
+| **Subtotal** | $18,560.00 |
+| **Profit Margin (15%)** | $2,784.00 |
+| **Total Estimated Cost** | **$21,344.00 MXN** |
+
+---
+
+## 5. Technical and Economic Justification
+
+The proposed cost reflects not only the hours dedicated to development but also the **professional value added** by integrating biomedical engineering precision with backend software development practices.  
+Each deliverable adheres to **clean code principles**, **standardized documentation**, and **reproducibility** across different environments (`dev`, `test`, `prod`).  
+
+Automated testing, API documentation, and architectural scalability ensure **long-term sustainability** and **quality assurance**.  
+The final cost of approximately **$51,000 MXN** represents a fair market value for professional backend API development within the Mexican engineering context, considering the project’s complexity, documentation quality, and inclusion of sustainability and scalability practices.
+
+---
+
+### Prepared by:
+**Eng. Leonel Campos Valdés**  
+Biomedical Engineer & Backend Developer Apprentice  
+*October 2025*
+
+---
+
+
+## Scalability and Sustainability
+
+### Scalability
+- **Stateless Architecture:** Each API instance is stateless and horizontally scalable through container orchestration (e.g., Docker / Kubernetes).
+- **Database Scalability:** PostgreSQL allows replication and read scaling. Connection pooling via HikariCP ensures efficient resource use.
+- **Load Balancing:** Multiple application nodes can be deployed behind a load balancer to handle high request volumes.
+- **Microservice Ready:** The Order Service can integrate within a distributed architecture, communicating via REST or message queues (Kafka/RabbitMQ).
+
+### Sustainability
+- **Code Maintainability:** Modular layered structure (controller / service / repository) ensures separation of concerns and reusability.
+- **Automated Testing:** Comprehensive testing provides long-term maintainability and early defect detection.
+- **Documentation:** API contracts are automatically generated via OpenAPI, facilitating external integration and onboarding.
+- **Energy and Resource Efficiency:** Lightweight frameworks (Spring Boot 3, H2) and containerization minimize resource usage.
+- **Continuous Integration:** Automated pipelines encourage consistent builds and reduce manual errors, supporting sustainable development.
+
+---
+
+## Version 3.0.0 (Sprint 3)
+
 
 
